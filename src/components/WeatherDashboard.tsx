@@ -29,9 +29,9 @@ export default function WeatherDashboard() {
           `https://api.openweathermap.org/data/2.5/weather?lat=${selectedCity.latitude}&lon=${selectedCity.longitude}&appid=${API_KEY}&units=metric`
         );
 
-        // Fetch forecast data using the updated OneCall API v3.0 endpoint
+        // Fetch forecast data using the OneCall API
         const forecastResponse = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${selectedCity.latitude}&lon=${selectedCity.longitude}&appid=${API_KEY}&units=metric&exclude=minutely`
+          `https://api.openweathermap.org/data/2.5/forecast?lat=${selectedCity.latitude}&lon=${selectedCity.longitude}&appid=${API_KEY}&units=metric`
         );
 
         if (!currentResponse.ok) {
@@ -48,6 +48,27 @@ export default function WeatherDashboard() {
 
         const currentData = await currentResponse.json();
         const forecastData = await forecastResponse.json();
+
+        console.log('Forecast API Response:', forecastData);
+        console.log('Forecast Data List:', forecastData.list);
+
+        console.log('Raw forecast data:', forecastData);
+        
+        if (!forecastData.list || !Array.isArray(forecastData.list)) {
+          console.error('Invalid forecast data structure:', forecastData);
+          throw new Error('Invalid forecast data received');
+        }
+
+        // Group forecast data by day for daily forecast
+        const dailyForecasts = forecastData.list.reduce((acc: any[], item: any) => {
+          const date = new Date(item.dt * 1000).setHours(0, 0, 0, 0);
+          if (!acc.find((day: any) => new Date(day.dt * 1000).setHours(0, 0, 0, 0) === date)) {
+            acc.push(item);
+          }
+          return acc;
+        }, []);
+
+        console.log('Processed daily forecasts:', dailyForecasts);
 
         const transformedData = {
           current: {
@@ -66,24 +87,38 @@ export default function WeatherDashboard() {
             uvi: forecastData.current?.uvi || 0,
             aqi: 0,
           },
-          hourly: (forecastData.hourly || []).slice(0, 48).map((hour: any) => ({
+          hourly: forecastData.list.slice(0, 48).map((hour: any) => ({
             dt: hour.dt,
-            temp: hour.temp,
+            temp: hour.main.temp,
+            feels_like: hour.main.feels_like,
+            humidity: hour.main.humidity,
+            pressure: hour.main.pressure,
+            wind_speed: hour.wind.speed,
+            wind_deg: hour.wind.deg,
             weather: hour.weather,
-            pop: hour.pop,
+            visibility: hour.visibility,
+            pop: hour.pop || 0,
           })),
-          daily: (forecastData.daily || []).slice(0, 10).map((day: any) => ({
+          daily: dailyForecasts.slice(0, 10).map((day: any) => ({
             dt: day.dt,
             temp: {
-              min: day.temp.min,
-              max: day.temp.max,
+              min: day.main.temp_min,
+              max: day.main.temp_max,
             },
+            feels_like: day.main.feels_like,
+            humidity: day.main.humidity,
+            pressure: day.main.pressure,
+            wind_speed: day.wind.speed,
+            wind_deg: day.wind.deg,
             weather: day.weather,
-            pop: day.pop,
-            moon_phase: day.moon_phase,
+            visibility: day.visibility,
+            pop: day.pop || 0,
           })),
           alerts: forecastData.alerts,
         };
+
+        console.log('Transformed hourly data:', transformedData.hourly);
+        console.log('Transformed daily data:', transformedData.daily);
 
         setWeatherData(transformedData);
       } catch (error) {
@@ -133,7 +168,16 @@ export default function WeatherDashboard() {
         </div>
 
         {weatherData && (
-          <Tabs defaultValue="current" className="space-y-6">
+          <Tabs defaultValue="current" className="space-y-6" onValueChange={(value) => {
+            console.log('Tab changed to:', value);
+            console.log('Weather data available:', {
+              current: !!weatherData.current,
+              hourly: !!weatherData.hourly,
+              daily: !!weatherData.daily,
+              hourlyLength: weatherData.hourly?.length,
+              dailyLength: weatherData.daily?.length,
+            });
+          }}>
             <TabsList className="w-full">
               <TabsTrigger value="current" className="flex-1">Current Conditions</TabsTrigger>
               <TabsTrigger value="hourly" className="flex-1">48-Hour Forecast</TabsTrigger>
@@ -146,11 +190,27 @@ export default function WeatherDashboard() {
             </TabsContent>
 
             <TabsContent value="hourly">
-              {weatherData.hourly && <HourlyForecast data={weatherData.hourly} />}
+              {weatherData.hourly ? (
+                weatherData.hourly.length > 0 ? (
+                  <HourlyForecast data={weatherData.hourly} />
+                ) : (
+                  <div>No hourly forecast data available</div>
+                )
+              ) : (
+                <div>Loading hourly forecast...</div>
+              )}
             </TabsContent>
 
             <TabsContent value="daily">
-              {weatherData.daily && <DailyForecast data={weatherData.daily} />}
+              {weatherData.daily ? (
+                weatherData.daily.length > 0 ? (
+                  <DailyForecast data={weatherData.daily} />
+                ) : (
+                  <div>No daily forecast data available</div>
+                )
+              ) : (
+                <div>Loading daily forecast...</div>
+              )}
             </TabsContent>
 
             <TabsContent value="maps">
