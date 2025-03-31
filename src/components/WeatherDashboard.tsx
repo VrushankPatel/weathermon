@@ -107,23 +107,23 @@ export default function WeatherDashboard() {
         </div>
 
         {weatherData && (
-          <Tabs defaultValue="current" className="flex-1 flex flex-col">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="current" className="text-lg py-3">Current Conditions</TabsTrigger>
-              <TabsTrigger value="maps" className="text-lg py-3">Weather Maps</TabsTrigger>
-            </TabsList>
+          <Tabs defaultValue="current" className="flex-1">
+            <div className="bg-card rounded-lg shadow-sm">
+              <TabsList className="w-full h-20">
+                <TabsTrigger value="current" className="flex-1 h-full text-lg">Current Conditions</TabsTrigger>
+                <TabsTrigger value="maps" className="flex-1 h-full text-lg">Weather Maps</TabsTrigger>
+              </TabsList>
+            </div>
 
-            <TabsContent value="current" className="flex-1 overflow-auto">
-              <div className="h-full">
+            <div className="mt-6 flex-1 overflow-hidden">
+              <TabsContent value="current" className="h-full">
                 {weatherData.current && <CurrentConditions data={weatherData.current} />}
-              </div>
-            </TabsContent>
+              </TabsContent>
 
-            <TabsContent value="maps" className="flex-1">
-              <div className="h-full">
+              <TabsContent value="maps" className="h-full">
                 <WeatherMap city={selectedCity} />
-              </div>
-            </TabsContent>
+              </TabsContent>
+            </div>
           </Tabs>
         )}
 
