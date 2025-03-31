@@ -7,7 +7,7 @@ import { WeatherData, City } from '@/types/weather';
 import CurrentConditions from './weather/CurrentConditions';
 import WeatherAlerts from './weather/WeatherAlerts';
 import WeatherMap from './weather/WeatherMap';
-import { ThemeToggle } from './ThemeToggle';
+import { ThemeToggle } from './ThemeToggle'; // Import useTheme hook
 
 // Replace with your OpenWeatherMap API key
 const API_KEY = 'baf815d606ba5cf519c346e7413c0421';
@@ -121,7 +121,9 @@ export default function WeatherDashboard() {
               </TabsContent>
 
               <TabsContent value="maps" className="h-full">
-                <WeatherMap city={selectedCity} />
+                <div className="h-screen">
+                  <WeatherMap city={selectedCity} />
+                </div>
               </TabsContent>
             </div>
           </Tabs>

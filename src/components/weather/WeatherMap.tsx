@@ -1,5 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { City } from '@/types/weather';
 
 interface WeatherMapProps {
@@ -7,12 +5,6 @@ interface WeatherMapProps {
 }
 
 export default function WeatherMap({ city }: WeatherMapProps) {
-  const mapTypes = [
-    { id: 'precipitation', name: 'Precipitation' },
-    { id: 'temp', name: 'Temperature' },
-    { id: 'wind', name: 'Wind' },
-    { id: 'pressure', name: 'Pressure' },
-  ];
 
   return (
     <div className="h-full rounded-lg overflow-hidden border">

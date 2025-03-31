@@ -1,15 +1,10 @@
-import { ThemeProvider } from '@/components/ThemeProvider';
-import WeatherDashboard from '@/components/WeatherDashboard';
-import { Toaster } from '@/components/ui/toaster';
+import WeatherDashboard from '@/components/WeatherDashboard'
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-      <div className="min-h-screen w-full bg-background text-foreground">
-        <WeatherDashboard />
-      </div>
-      <Toaster />
-    </ThemeProvider>
+    <div>
+      <WeatherDashboard />
+    </div>
   );
 }
 
