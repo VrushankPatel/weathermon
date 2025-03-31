@@ -49,13 +49,7 @@ export default function WeatherDashboard() {
         const currentData = await currentResponse.json();
         const forecastData = await forecastResponse.json();
 
-        console.log('Forecast API Response:', forecastData);
-        console.log('Forecast Data List:', forecastData.list);
-
-        console.log('Raw forecast data:', forecastData);
-        
         if (!forecastData.list || !Array.isArray(forecastData.list)) {
-          console.error('Invalid forecast data structure:', forecastData);
           throw new Error('Invalid forecast data received');
         }
 
@@ -67,8 +61,6 @@ export default function WeatherDashboard() {
           }
           return acc;
         }, []);
-
-        console.log('Processed daily forecasts:', dailyForecasts);
 
         const transformedData = {
           current: {
@@ -116,9 +108,6 @@ export default function WeatherDashboard() {
           })),
           alerts: forecastData.alerts,
         };
-
-        console.log('Transformed hourly data:', transformedData.hourly);
-        console.log('Transformed daily data:', transformedData.daily);
 
         setWeatherData(transformedData);
       } catch (error) {
@@ -168,16 +157,7 @@ export default function WeatherDashboard() {
         </div>
 
         {weatherData && (
-          <Tabs defaultValue="current" className="space-y-6" onValueChange={(value) => {
-            console.log('Tab changed to:', value);
-            console.log('Weather data available:', {
-              current: !!weatherData.current,
-              hourly: !!weatherData.hourly,
-              daily: !!weatherData.daily,
-              hourlyLength: weatherData.hourly?.length,
-              dailyLength: weatherData.daily?.length,
-            });
-          }}>
+          <Tabs defaultValue="current" className="space-y-6">
             <TabsList className="w-full">
               <TabsTrigger value="current" className="flex-1">Current Conditions</TabsTrigger>
               <TabsTrigger value="hourly" className="flex-1">48-Hour Forecast</TabsTrigger>
