@@ -10,10 +10,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head />
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider defaultTheme="light">
           {children}
         </ThemeProvider>
       </body>
     </html>
   );
-} 
+}
