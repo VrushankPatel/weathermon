@@ -7,9 +7,10 @@ import { WeatherData, City } from '@/types/weather';
 import CurrentConditions from './weather/CurrentConditions';
 import WeatherAlerts from './weather/WeatherAlerts';
 import WeatherMap from './weather/WeatherMap';
-import { ThemeToggle } from './ThemeToggle'; // Import useTheme hook
+import { ThemeToggle } from './ThemeToggle';
+import HourlyForecast from './weather/HourlyForecast';
+import DailyForecast from './weather/DailyForecast';
 
-// Replace with your OpenWeatherMap API key
 const API_KEY = 'baf815d606ba5cf519c346e7413c0421';
 
 export default function WeatherDashboard() {
@@ -23,40 +24,71 @@ export default function WeatherDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(
+        // Fetch current weather
+        const currentResponse = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${selectedCity.latitude}&lon=${selectedCity.longitude}&appid=${API_KEY}&units=metric`
+        );
+
+        // Fetch forecast data using the updated OneCall API v3.0 endpoint
+        const forecastResponse = await fetch(
           `https://api.openweathermap.org/data/2.5/weather?lat=${selectedCity.latitude}&lon=${selectedCity.longitude}&appid=${API_KEY}&units=metric&exclude=minutely`
         );
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to fetch weather data');
+        if (!currentResponse.ok) {
+          const errorData = await currentResponse.json();
+          console.error('Current weather API error:', currentResponse.status, currentResponse.statusText, errorData);
+          throw new Error(`Failed to fetch current weather: ${errorData.message || currentResponse.statusText}`);
         }
 
-        const data = await response.json();
+        if (!forecastResponse.ok) {
+          const errorData = await forecastResponse.json();
+          console.error('Forecast API error:', forecastResponse.status, forecastResponse.statusText, errorData);
+          throw new Error(`Failed to fetch forecast: ${errorData.message || forecastResponse.statusText}`);
+        }
+
+        const currentData = await currentResponse.json();
+        const forecastData = await forecastResponse.json();
+
         const transformedData = {
           current: {
-            temp: data.main.temp,
-            feels_like: data.main.feels_like,
-            temp_min: data.main.temp_min,
-            temp_max: data.main.temp_max,
-            humidity: data.main.humidity,
-            pressure: data.main.pressure,
-            wind_speed: data.wind.speed,
-            wind_deg: data.wind.deg,
-            weather: data.weather,
-            visibility: data.visibility,
-            sunrise: data.sys.sunrise,
-            sunset: data.sys.sunset,
-            uvi: 0,
+            temp: currentData.main.temp,
+            feels_like: currentData.main.feels_like,
+            temp_min: currentData.main.temp_min,
+            temp_max: currentData.main.temp_max,
+            humidity: currentData.main.humidity,
+            pressure: currentData.main.pressure,
+            wind_speed: currentData.wind.speed,
+            wind_deg: currentData.wind.deg,
+            weather: currentData.weather,
+            visibility: currentData.visibility,
+            sunrise: currentData.sys.sunrise,
+            sunset: currentData.sys.sunset,
+            uvi: forecastData.current?.uvi || 0,
             aqi: 0,
           },
-          hourly: [],
-          daily: [],
+          hourly: (forecastData.hourly || []).slice(0, 48).map((hour: any) => ({
+            dt: hour.dt,
+            temp: hour.temp,
+            weather: hour.weather,
+            pop: hour.pop,
+          })),
+          daily: (forecastData.daily || []).slice(0, 10).map((day: any) => ({
+            dt: day.dt,
+            temp: {
+              min: day.temp.min,
+              max: day.temp.max,
+            },
+            weather: day.weather,
+            pop: day.pop,
+            moon_phase: day.moon_phase,
+          })),
+          alerts: forecastData.alerts,
         };
+
         setWeatherData(transformedData);
       } catch (error) {
         console.error('Error fetching weather data:', error);
-        setError(error instanceof Error ? error.message : 'Failed to load weather data. Please try again later.');
+        setError(error instanceof Error ? error.message : 'Failed to load weather data');
       }
       setLoading(false);
     };
@@ -73,16 +105,10 @@ export default function WeatherDashboard() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-background to-muted">
-      <div className="container mx-auto px-4 py-6 h-screen flex flex-col">
+    <div className="min-h-screen w-full bg-background">
+      <div className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400" style={{
-            textShadow: '2px 2px 4px rgba(0,0,0,0.1)',
-            fontFamily: "'Arial Black', sans-serif",
-            letterSpacing: '0.05em'
-          }}>
-            Weather Monitor
-          </h1>
+          <h1 className="text-4xl font-bold">Weather Monitor</h1>
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <Select
@@ -107,25 +133,31 @@ export default function WeatherDashboard() {
         </div>
 
         {weatherData && (
-          <Tabs defaultValue="current" className="flex-1">
-            <div className="bg-card rounded-lg shadow-sm">
-              <TabsList className="w-full h-20">
-                <TabsTrigger value="current" className="flex-1 h-full text-lg">Current Conditions</TabsTrigger>
-                <TabsTrigger value="maps" className="flex-1 h-full text-lg">Weather Maps</TabsTrigger>
-              </TabsList>
-            </div>
+          <Tabs defaultValue="current" className="space-y-6">
+            <TabsList className="w-full">
+              <TabsTrigger value="current" className="flex-1">Current Conditions</TabsTrigger>
+              <TabsTrigger value="hourly" className="flex-1">48-Hour Forecast</TabsTrigger>
+              <TabsTrigger value="daily" className="flex-1">10-Day Forecast</TabsTrigger>
+              <TabsTrigger value="maps" className="flex-1">Weather Maps</TabsTrigger>
+            </TabsList>
 
-            <div className="mt-6 flex-1 overflow-hidden">
-              <TabsContent value="current" className="h-full">
-                {weatherData.current && <CurrentConditions data={weatherData.current} />}
-              </TabsContent>
+            <TabsContent value="current">
+              {weatherData.current && <CurrentConditions data={weatherData.current} />}
+            </TabsContent>
 
-              <TabsContent value="maps" className="h-full">
-                <div className="h-screen">
-                  <WeatherMap city={selectedCity} />
-                </div>
-              </TabsContent>
-            </div>
+            <TabsContent value="hourly">
+              {weatherData.hourly && <HourlyForecast data={weatherData.hourly} />}
+            </TabsContent>
+
+            <TabsContent value="daily">
+              {weatherData.daily && <DailyForecast data={weatherData.daily} />}
+            </TabsContent>
+
+            <TabsContent value="maps">
+              <div className="h-[600px]">
+                <WeatherMap city={selectedCity} />
+              </div>
+            </TabsContent>
           </Tabs>
         )}
 
